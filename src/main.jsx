@@ -3,12 +3,14 @@ import { createRoot } from "react-dom/client";
 import {
   Activity,
   Camera,
+  CloudDownload,
+  CloudUpload,
   Copy,
   Download,
-  Droplets,
   HeartPulse,
   ImagePlus,
   Import,
+  KeyRound,
   LineChart,
   Plus,
   Save,
@@ -31,6 +33,12 @@ import {
   upsertRecord,
 } from "./storage.js";
 import { buildDailySummary, chartSeries, completionScore, numeric } from "./insights.js";
+import {
+  downloadEncryptedBackup,
+  loadSyncCode,
+  saveSyncCode,
+  uploadEncryptedBackup,
+} from "./sync.js";
 import "./styles.css";
 
 const moods = ["很好", "普通", "疲累", "壓力大", "睡不夠"];
@@ -51,6 +59,8 @@ function App() {
   const [draft, setDraft] = useState(() => findOrCreate(loadRecords(), todayKey()));
   const [toast, setToast] = useState("");
   const [trendDays, setTrendDays] = useState(7);
+  const [syncCode, setSyncCode] = useState(() => loadSyncCode());
+  const [syncBusy, setSyncBusy] = useState(false);
   const fileImportRef = useRef(null);
 
   useEffect(() => {
@@ -132,6 +142,36 @@ function App() {
       pulse(error.message || "匯入失敗");
     } finally {
       event.target.value = "";
+    }
+  }
+
+  async function uploadSync() {
+    try {
+      setSyncBusy(true);
+      saveSyncCode(syncCode);
+      const backup = await exportBackup(records, settings, { includeMedia: false });
+      await uploadEncryptedBackup(syncCode, backup);
+      pulse("已上傳同步");
+    } catch (error) {
+      pulse(error.message || "同步失敗");
+    } finally {
+      setSyncBusy(false);
+    }
+  }
+
+  async function downloadSync() {
+    try {
+      setSyncBusy(true);
+      saveSyncCode(syncCode);
+      const backup = await downloadEncryptedBackup(syncCode);
+      const imported = await importBackup(backup);
+      setRecords(imported.records);
+      setSettings(imported.settings);
+      pulse("已下載同步");
+    } catch (error) {
+      pulse(error.message || "同步失敗");
+    } finally {
+      setSyncBusy(false);
     }
   }
 
@@ -255,9 +295,27 @@ function App() {
       <section className="panel">
         <div className="section-title">
           <div>
-            <h2>備份與同步預留</h2>
-            <p>目前完全本機，Apple Health V2 才啟用</p>
+            <h2>備份與同步</h2>
+            <p>同步文字資料；照片請用備份檔保存</p>
           </div>
+        </div>
+        <label className="field sync-code">
+          <span><KeyRound size={16} /> 同步碼</span>
+          <input
+            value={syncCode}
+            onChange={(event) => setSyncCode(event.target.value)}
+            minLength="8"
+            autoComplete="off"
+            placeholder="自己設定，電腦和手機輸入同一組"
+          />
+        </label>
+        <div className="backup-actions">
+          <button className="icon-text" onClick={uploadSync} disabled={syncBusy}>
+            <CloudUpload size={18} /> 上傳同步
+          </button>
+          <button className="icon-text" onClick={downloadSync} disabled={syncBusy}>
+            <CloudDownload size={18} /> 下載同步
+          </button>
         </div>
         <div className="backup-actions">
           <button className="icon-text" onClick={downloadBackup}>

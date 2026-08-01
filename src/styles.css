@@ -95,6 +95,7 @@ h3 { font-size: 1rem; }
 .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .field, .segment-group { display: grid; gap: 7px; margin-bottom: 12px; }
 .field span, .segment-group > span { color: #5e5548; font-size: 0.88rem; font-weight: 700; }
+.sync-code span { display: inline-flex; align-items: center; gap: 6px; }
 input, textarea {
   width: 100%;
   border: 1px solid #d8c9b1;
@@ -131,6 +132,7 @@ textarea { resize: vertical; min-height: 104px; }
 .danger { background: #fff1f0; color: #9f1239; padding: 0 16px; border: 1px solid #fecdd3; }
 .danger:disabled { opacity: 0.45; cursor: not-allowed; }
 .icon-text { background: #14342f; color: #fff; padding: 0 14px; }
+.icon-text:disabled { opacity: 0.55; cursor: wait; }
 
 .media-section { margin-bottom: 12px; }
 .media-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

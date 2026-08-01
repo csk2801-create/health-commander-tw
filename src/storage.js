@@ -119,7 +119,19 @@ export async function deleteImages(ids) {
   db.close();
 }
 
-export async function exportBackup(records, settings) {
+export async function exportBackup(records, settings, options = {}) {
+  const includeMedia = options.includeMedia !== false;
+  const exportedRecords = includeMedia ? records : records.map(stripMediaRefs);
+  if (!includeMedia) {
+    return {
+      app: "Health Commander",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      records: exportedRecords,
+      settings,
+      media: [],
+    };
+  }
   const mediaIds = records.flatMap((record) => [
     ...record.meals.breakfast.map((item) => item.id),
     ...record.meals.lunch.map((item) => item.id),
@@ -138,7 +150,7 @@ export async function exportBackup(records, settings) {
     app: "Health Commander",
     version: 1,
     exportedAt: new Date().toISOString(),
-    records,
+    records: exportedRecords,
     settings,
     media,
   };
@@ -185,4 +197,17 @@ function blobToDataUrl(blob) {
 async function dataUrlToBlob(dataUrl) {
   const response = await fetch(dataUrl);
   return response.blob();
+}
+
+function stripMediaRefs(record) {
+  return {
+    ...record,
+    meals: {
+      breakfast: [],
+      lunch: [],
+      dinner: [],
+    },
+    sleepImages: [],
+    exerciseImages: [],
+  };
 }
