@@ -35,7 +35,9 @@ import {
 import { buildDailySummary, chartSeries, completionScore, numeric } from "./insights.js";
 import {
   downloadEncryptedBackup,
+  loadCloudMode,
   loadSyncCode,
+  saveCloudMode,
   saveSyncCode,
   uploadEncryptedBackup,
 } from "./sync.js";
@@ -60,6 +62,10 @@ function App() {
   const [toast, setToast] = useState("");
   const [trendDays, setTrendDays] = useState(7);
   const [syncCode, setSyncCode] = useState(() => loadSyncCode());
+  const [cloudMode, setCloudMode] = useState(() => loadCloudMode());
+  const [cloudStatus, setCloudStatus] = useState(() =>
+    loadCloudMode() ? "雲端模式已開啟" : "尚未開啟雲端模式",
+  );
   const [syncBusy, setSyncBusy] = useState(false);
   const fileImportRef = useRef(null);
 
@@ -81,6 +87,7 @@ function App() {
     setRecords(next);
     saveRecords(next);
     pulse("已儲存");
+    syncToCloud(next, settings);
   }
 
   async function removeCurrent() {
@@ -91,6 +98,7 @@ function App() {
     saveRecords(next);
     setSelectedDate(todayKey());
     pulse("已刪除");
+    syncToCloud(next, settings);
   }
 
   async function addImages(target, files) {
@@ -138,6 +146,7 @@ function App() {
       setRecords(imported.records);
       setSettings(imported.settings);
       pulse("備份已匯入");
+      syncToCloud(imported.records, imported.settings);
     } catch (error) {
       pulse(error.message || "匯入失敗");
     } finally {
@@ -149,10 +158,14 @@ function App() {
     try {
       setSyncBusy(true);
       saveSyncCode(syncCode);
+      saveCloudMode(true);
+      setCloudMode(true);
       const backup = await exportBackup(records, settings, { includeMedia: false });
       await uploadEncryptedBackup(syncCode, backup);
-      pulse("已上傳同步");
+      setCloudStatus("已上傳到雲端，之後會自動同步");
+      pulse("雲端已開啟");
     } catch (error) {
+      setCloudStatus(error.message || "雲端同步失敗");
       pulse(error.message || "同步失敗");
     } finally {
       setSyncBusy(false);
@@ -167,12 +180,36 @@ function App() {
       const imported = await importBackup(backup);
       setRecords(imported.records);
       setSettings(imported.settings);
-      pulse("已下載同步");
+      saveCloudMode(true);
+      setCloudMode(true);
+      setCloudStatus("已載入雲端，之後會自動同步");
+      pulse("已載入雲端");
     } catch (error) {
+      setCloudStatus(error.message || "雲端載入失敗");
       pulse(error.message || "同步失敗");
     } finally {
       setSyncBusy(false);
     }
+  }
+
+  async function syncToCloud(nextRecords, nextSettings) {
+    if (!cloudMode || !syncCode.trim()) return;
+    try {
+      setCloudStatus("正在同步到雲端...");
+      const backup = await exportBackup(nextRecords, nextSettings, { includeMedia: false });
+      await uploadEncryptedBackup(syncCode, backup);
+      saveSyncCode(syncCode);
+      setCloudStatus(`已同步到雲端 ${new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })}`);
+    } catch (error) {
+      setCloudStatus(error.message || "雲端同步失敗");
+    }
+  }
+
+  function disableCloudMode() {
+    saveCloudMode(false);
+    setCloudMode(false);
+    setCloudStatus("已關閉本裝置雲端自動同步");
+    pulse("已關閉雲端");
   }
 
   function updateField(field, value) {
@@ -295,8 +332,8 @@ function App() {
       <section className="panel">
         <div className="section-title">
           <div>
-            <h2>備份與同步</h2>
-            <p>同步文字資料；照片請用備份檔保存</p>
+            <h2>雲端紀錄</h2>
+            <p>{cloudStatus}</p>
           </div>
         </div>
         <label className="field sync-code">
@@ -309,12 +346,19 @@ function App() {
             placeholder="自己設定，電腦和手機輸入同一組"
           />
         </label>
+        <div className={`cloud-state ${cloudMode ? "on" : ""}`}>
+          <CloudUpload size={18} />
+          <span>{cloudMode ? "本裝置會自動儲存到雲端" : "輸入同步碼後，先開啟或載入雲端"}</span>
+        </div>
         <div className="backup-actions">
           <button className="icon-text" onClick={uploadSync} disabled={syncBusy}>
-            <CloudUpload size={18} /> 上傳同步
+            <CloudUpload size={18} /> 開啟雲端
           </button>
           <button className="icon-text" onClick={downloadSync} disabled={syncBusy}>
-            <CloudDownload size={18} /> 下載同步
+            <CloudDownload size={18} /> 載入雲端
+          </button>
+          <button className="subtle" onClick={disableCloudMode} disabled={!cloudMode}>
+            關閉本機自動同步
           </button>
         </div>
         <div className="backup-actions">

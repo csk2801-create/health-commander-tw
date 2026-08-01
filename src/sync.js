@@ -1,6 +1,7 @@
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const STORAGE_KEY = "health-commander.syncCode.v1";
+const CLOUD_MODE_KEY = "health-commander.cloudMode.v1";
 
 export function loadSyncCode() {
   return localStorage.getItem(STORAGE_KEY) || "";
@@ -8,6 +9,14 @@ export function loadSyncCode() {
 
 export function saveSyncCode(code) {
   localStorage.setItem(STORAGE_KEY, code);
+}
+
+export function loadCloudMode() {
+  return localStorage.getItem(CLOUD_MODE_KEY) === "on";
+}
+
+export function saveCloudMode(enabled) {
+  localStorage.setItem(CLOUD_MODE_KEY, enabled ? "on" : "off");
 }
 
 export async function uploadEncryptedBackup(syncCode, backup) {

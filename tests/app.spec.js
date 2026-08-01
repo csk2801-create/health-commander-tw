@@ -23,3 +23,25 @@ test("camera and gallery inputs are configured for mobile photo capture", async 
   await expect(cameraInput).toHaveAttribute("accept", "image/*");
   await expect(galleryInput).toHaveAttribute("accept", "image/*");
 });
+
+test("cloud mode auto uploads text records after save", async ({ page }) => {
+  const requests = [];
+  await page.route("/api/sync/**", async (route) => {
+    requests.push(route.request().method());
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, updatedAt: new Date().toISOString() }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByPlaceholder("自己設定，電腦和手機輸入同一組").fill("test-cloud-code");
+  await page.getByRole("button", { name: "開啟雲端" }).click();
+  await expect(page.getByText("雲端已開啟")).toBeVisible();
+
+  await page.getByLabel("早上體重 kg").fill("82.8");
+  await page.getByRole("button", { name: "儲存" }).first().click();
+
+  await expect.poll(() => requests.filter((method) => method === "PUT").length).toBeGreaterThanOrEqual(2);
+});

@@ -37,7 +37,7 @@ h1 { font-size: clamp(1.8rem, 8vw, 3.3rem); line-height: 1.02; letter-spacing: 0
 h2 { font-size: 1.18rem; }
 h3 { font-size: 1rem; }
 
-.icon-button, .icon-text, .primary, .danger, .bucket-actions button, .bottom-nav button, .bottom-nav a {
+.icon-button, .icon-text, .primary, .danger, .subtle, .bucket-actions button, .bottom-nav button, .bottom-nav a {
   border: 0;
   border-radius: 8px;
   min-height: 44px;
@@ -133,6 +133,24 @@ textarea { resize: vertical; min-height: 104px; }
 .danger:disabled { opacity: 0.45; cursor: not-allowed; }
 .icon-text { background: #14342f; color: #fff; padding: 0 14px; }
 .icon-text:disabled { opacity: 0.55; cursor: wait; }
+.subtle { background: #f0ebe1; color: #5e5548; padding: 0 14px; }
+.subtle:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.cloud-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -2px 0 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f7f3ea;
+  color: #5e5548;
+  font-size: 0.9rem;
+}
+.cloud-state.on {
+  background: #edf7f5;
+  color: #134e4a;
+}
 
 .media-section { margin-bottom: 12px; }
 .media-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
